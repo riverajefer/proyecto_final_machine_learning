@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <title>PREDICT TEXT EMOTIONS</title>
+</head>
+
+<body>
+    <div id="app">
+        <v-app id="inspire">
+            <v-app-bar app color="#455A64" flat dark>
+                <v-container class="py-0 fill-height">
+                    <p color="teal lighten-5" class="py-5">PROYECTO FINAL. CURSO MLDS. MÓDULO II</p>
+                    <v-spacer></v-spacer>
+                </v-container>
+            </v-app-bar>
+
+            <v-main class="grey lighten-3">
+                <v-container>
+                    <v-row>
+                        <v-col>
+                            <v-sheet min-height="85vh" color="blue-grey darken-2" rounded="lg" class="py-5" dark>
+                                <v-card elevation="0" class="mx-auto py-12 px-10" max-width="800"
+                                    color="blue-grey darken-2" dark>
+
+                                    <v-card-title class="pb-5 ml-3">A continación introduce el texto de la emoción que
+                                        quieres predecir <br> en inglés.</v-card-title>
+
+                                    <v-textarea class="ml-2 py-3 px-4" outlined name="input-7-4" color="yellow accent-2"
+                                        label="Emotion" v-model="modelText"></v-textarea>
+                                    </v-textarea>
+
+                                    <v-card-actions>
+                                        <v-btn class="px-10 ml-4" :disabled="modelText.length==0" raised outlined
+                                            rounded tile color="yellow accent-2" :loading="loading" :disabled="loading"
+                                            @click="onClickPredict()">
+                                            PREDECIR
+                                            <template v-slot:loader>
+                                                <span class="px-10">
+                                                    <i class="fas fa-spinner fa-pulse"></i>
+                                                    Prediciendo...
+                                                </span>
+                                            </template>
+                                        </v-btn>
+                                    </v-card-actions>
+                                </v-card>
+                                <!-- RESULT -->
+                                <v-card elevation="0" class="mx-auto py-2 px-10" max-width="800" v-if="response" dark
+                                    color="blue-grey darken-2">
+                                    <h3 class="pl-2 pb-5">RESULTADO</h3>
+
+                                    <v-divider class="my-2"></v-divider>
+
+                                    <v-simple-table color="blue-grey darken-2" dark>
+                                        <template v-slot:default>
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-left">
+                                                        Model
+                                                    </th>
+                                                    <th class="text-left">
+                                                        Emotion Predict
+                                                    </th>
+                                                    <th class="text-left">
+                                                        Emotion Predict
+                                                    </th>
+                                                    <th class="text-left">
+                                                        Metrics
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="(item, index) in resultModels" :key="index">
+                                                    <td>%% item.model %%</td>
+                                                    <td>
+                                                        %% item.emotion %%
+                                                    </td>
+                                                    <td :title=`${item.emotion}` >
+                                                        <img :title=`${item.emotion}` width="32px" :src=`static/images/${item.emotion}.png`>
+                                                    </td>
+                                                    <td style="cursor: pointer; color: #ff0" link
+                                                        @click="onclickGetMetricsModel(item.model)">
+                                                        View
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </template>
+                                    </v-simple-table>
+                                </v-card>
+                            </v-sheet>
+                        </v-col>
+                    </v-row>
+                    <v-row>
+                        <v-col>
+                            <ul>
+                                <li>Autor Jefferson Rivera Patiño</li>
+                                <li>riverajefer@gmail.com</li>
+                                <li>Grupo II</li>
+                                <li>Universidad Nacional de Colombia</li>
+                            </ul>
+                        </v-col>
+                    </v-row>
+
+                    <v-dialog v-model="dialogMetrics" max-width="520">
+                        <v-card>
+                            <v-card-title class="headline">
+                                METRICS MODELO : %% selectedModel %%
+                            </v-card-title>
+
+                            <v-card-text>
+                                <v-simple-table color="blue-grey darken-2">
+                                    <template v-slot:default>
+                                        <thead>
+                                            <tr>
+                                                <th class="text-left">
+                                                    Metric
+                                                </th>
+                                                <th class="text-left">
+                                                    Value
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(item, index) in metrics" :key="index">
+                                                <td>%% item.metric %%</td>
+                                                <td>%% item.value.toFixed(3) %%</td>
+                                            </tr>
+                                        </tbody>
+                                    </template>
+                                </v-simple-table>
+                            </v-card-text>
+
+                            <v-card-actions>
+                                <v-spacer></v-spacer>
+
+                                <v-btn color="green darken-1" text @click="dialogMetrics = false">
+                                    OK
+                                </v-btn>
+                            </v-card-actions>
+                        </v-card>
+                    </v-dialog>
+
+                    <v-dialog v-model="dialogLoading" persistent width="300">
+                        <v-card color="blue-grey lighten-1" dark>
+                            <v-card-text>
+                                Espere...
+                                <v-progress-linear indeterminate color="white" class="mb-0"></v-progress-linear>
+                            </v-card-text>
+                        </v-card>
+                    </v-dialog>
+                </v-container>
+            </v-main>
+        </v-app>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script>
+        new Vue({
+            delimiters: ['%%', '%%'],
+            el: '#app',
+            vuetify: new Vuetify(),
+            data: {
+                loading: false,
+                response: false,
+                modelText: 'I had to choose the sleek and smoother feel of the sweet revenge made drawing and handling the blaster a bit nicer',
+                emotionPred: '',
+                salida_texto: 'hola mundo',
+                resultModels: [],
+                dialogMetrics: false,
+                metrics: [],
+                selectedModel: '',
+                dialogLoading: false
+            },
+
+            methods: {
+                onClickPredict() {
+                    console.log('Predecir');
+                    console.log('modelText: ', this.modelText);
+                    this.loading = true;
+                    this.response = false;
+                    this.onSendTextService(this.modelText);
+                },
+
+                onSendTextService(text) {
+                    axios.post('/', {
+                        text: text
+                    }).then((response) => {
+                        this.loading = false;
+                        console.log('response:', response);
+                        console.log('response data:', response.data);
+                        this.resultModels = response.data;
+                        this.emotionPred = response.data;
+                        console.log('this.emotionPred: ', this.emotionPred)
+                        this.response = true;
+                    }).catch((error) => {
+                        this.loading = false;
+                        console.log('error:', error)
+                    })
+                },
+
+                onclickGetMetricsModel(nameModel) {
+                    if (this.dialogLoading) return;
+
+                    console.log('nameModel: ', nameModel);
+                    this.ongetMetricsModelService(nameModel);
+                },
+
+                ongetMetricsModelService(nameModel) {
+                    this.selectedModel = nameModel;
+                    this.dialogLoading = true;
+
+                    nameModel = nameModel + '.model'
+
+                    axios.post('/get_metrics_by_model', {
+                        name_model: nameModel
+                    }).then((response) => {
+                        this.dialogMetrics = true;
+                        console.log('response data:', response.data);
+                        this.metrics = response.data;
+                        this.dialogLoading = false;
+                    }).catch((error) => {
+                        console.log('error:', error)
+                        this.dialogLoading = false;
+                    })
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
