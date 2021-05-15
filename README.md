@@ -13,5 +13,5 @@ http://207.154.233.224:8000/
 </center> 
 
 
-@autor Jefferon Rivera 
-Email riverajefer@gmail.com
+- @autor Jefferon Rivera  
+- Email riverajefer@gmail.com
